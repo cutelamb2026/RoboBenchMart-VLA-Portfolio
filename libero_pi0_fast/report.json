@@ -1,0 +1,475 @@
+{
+  "suites": {
+    "libero_spatial": {
+      "tasks_observed": 10,
+      "complete_ten_tasks": true,
+      "all_50_trials": true,
+      "successes": 480,
+      "trials": 500,
+      "pooled_success_rate": 0.96,
+      "mean_task_success_rate": 0.96,
+      "wilson_95_pooled": [
+        0.9390264041651492,
+        0.9739592026102227
+      ],
+      "tasks": [
+        {
+          "task_id": 0,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 1,
+          "successes": 45,
+          "trials": 50,
+          "success_rate": 0.9,
+          "wilson_95": [
+            0.7863976856252035,
+            0.9565242350681096
+          ]
+        },
+        {
+          "task_id": 2,
+          "successes": 49,
+          "trials": 50,
+          "success_rate": 0.98,
+          "wilson_95": [
+            0.8950455641036219,
+            0.9964607407283539
+          ]
+        },
+        {
+          "task_id": 3,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 4,
+          "successes": 47,
+          "trials": 50,
+          "success_rate": 0.94,
+          "wilson_95": [
+            0.8378290831116182,
+            0.979385029651026
+          ]
+        },
+        {
+          "task_id": 5,
+          "successes": 44,
+          "trials": 50,
+          "success_rate": 0.88,
+          "wilson_95": [
+            0.7619518261679701,
+            0.9438239984906773
+          ]
+        },
+        {
+          "task_id": 6,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 7,
+          "successes": 47,
+          "trials": 50,
+          "success_rate": 0.94,
+          "wilson_95": [
+            0.8378290831116182,
+            0.979385029651026
+          ]
+        },
+        {
+          "task_id": 8,
+          "successes": 48,
+          "trials": 50,
+          "success_rate": 0.96,
+          "wilson_95": [
+            0.8653990931249297,
+            0.9889611156723802
+          ]
+        },
+        {
+          "task_id": 9,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        }
+      ]
+    },
+    "libero_object": {
+      "tasks_observed": 10,
+      "complete_ten_tasks": true,
+      "all_50_trials": true,
+      "successes": 485,
+      "trials": 500,
+      "pooled_success_rate": 0.97,
+      "mean_task_success_rate": 0.97,
+      "wilson_95_pooled": [
+        0.9510963331640543,
+        0.9817367868020865
+      ],
+      "tasks": [
+        {
+          "task_id": 0,
+          "successes": 46,
+          "trials": 50,
+          "success_rate": 0.92,
+          "wilson_95": [
+            0.8116175308165717,
+            0.968450485911407
+          ]
+        },
+        {
+          "task_id": 1,
+          "successes": 49,
+          "trials": 50,
+          "success_rate": 0.98,
+          "wilson_95": [
+            0.8950455641036219,
+            0.9964607407283539
+          ]
+        },
+        {
+          "task_id": 2,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 3,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 4,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 5,
+          "successes": 43,
+          "trials": 50,
+          "success_rate": 0.86,
+          "wilson_95": [
+            0.7381380628941446,
+            0.9304916657298371
+          ]
+        },
+        {
+          "task_id": 6,
+          "successes": 47,
+          "trials": 50,
+          "success_rate": 0.94,
+          "wilson_95": [
+            0.8378290831116182,
+            0.979385029651026
+          ]
+        },
+        {
+          "task_id": 7,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 8,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 9,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        }
+      ]
+    },
+    "libero_goal": {
+      "tasks_observed": 10,
+      "complete_ten_tasks": true,
+      "all_50_trials": true,
+      "successes": 438,
+      "trials": 500,
+      "pooled_success_rate": 0.876,
+      "mean_task_success_rate": 0.876,
+      "wilson_95_pooled": [
+        0.8442125871122163,
+        0.9020539088606966
+      ],
+      "tasks": [
+        {
+          "task_id": 0,
+          "successes": 36,
+          "trials": 50,
+          "success_rate": 0.72,
+          "wilson_95": [
+            0.5833487630404344,
+            0.8252582933408878
+          ]
+        },
+        {
+          "task_id": 1,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 2,
+          "successes": 48,
+          "trials": 50,
+          "success_rate": 0.96,
+          "wilson_95": [
+            0.8653990931249297,
+            0.9889611156723802
+          ]
+        },
+        {
+          "task_id": 3,
+          "successes": 46,
+          "trials": 50,
+          "success_rate": 0.92,
+          "wilson_95": [
+            0.8116175308165717,
+            0.968450485911407
+          ]
+        },
+        {
+          "task_id": 4,
+          "successes": 49,
+          "trials": 50,
+          "success_rate": 0.98,
+          "wilson_95": [
+            0.8950455641036219,
+            0.9964607407283539
+          ]
+        },
+        {
+          "task_id": 5,
+          "successes": 45,
+          "trials": 50,
+          "success_rate": 0.9,
+          "wilson_95": [
+            0.7863976856252035,
+            0.9565242350681096
+          ]
+        },
+        {
+          "task_id": 6,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 7,
+          "successes": 47,
+          "trials": 50,
+          "success_rate": 0.94,
+          "wilson_95": [
+            0.8378290831116182,
+            0.979385029651026
+          ]
+        },
+        {
+          "task_id": 8,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 9,
+          "successes": 17,
+          "trials": 50,
+          "success_rate": 0.34,
+          "wilson_95": [
+            0.2243694922250009,
+            0.478461739497674
+          ]
+        }
+      ]
+    },
+    "libero_10": {
+      "tasks_observed": 10,
+      "complete_ten_tasks": true,
+      "all_50_trials": true,
+      "successes": 301,
+      "trials": 500,
+      "pooled_success_rate": 0.602,
+      "mean_task_success_rate": 0.6020000000000001,
+      "wilson_95_pooled": [
+        0.5584746124497376,
+        0.6439700220961057
+      ],
+      "tasks": [
+        {
+          "task_id": 0,
+          "successes": 43,
+          "trials": 50,
+          "success_rate": 0.86,
+          "wilson_95": [
+            0.7381380628941446,
+            0.9304916657298371
+          ]
+        },
+        {
+          "task_id": 1,
+          "successes": 50,
+          "trials": 50,
+          "success_rate": 1.0,
+          "wilson_95": [
+            0.9286524008666414,
+            1.0
+          ]
+        },
+        {
+          "task_id": 2,
+          "successes": 12,
+          "trials": 50,
+          "success_rate": 0.24,
+          "wilson_95": [
+            0.1429739139699173,
+            0.3741268375794292
+          ]
+        },
+        {
+          "task_id": 3,
+          "successes": 19,
+          "trials": 50,
+          "success_rate": 0.38,
+          "wilson_95": [
+            0.25862789310193596,
+            0.5184955306900703
+          ]
+        },
+        {
+          "task_id": 4,
+          "successes": 44,
+          "trials": 50,
+          "success_rate": 0.88,
+          "wilson_95": [
+            0.7619518261679701,
+            0.9438239984906773
+          ]
+        },
+        {
+          "task_id": 5,
+          "successes": 28,
+          "trials": 50,
+          "success_rate": 0.56,
+          "wilson_95": [
+            0.4230602802165686,
+            0.6883780078874284
+          ]
+        },
+        {
+          "task_id": 6,
+          "successes": 40,
+          "trials": 50,
+          "success_rate": 0.8,
+          "wilson_95": [
+            0.6696289406777459,
+            0.887562499842239
+          ]
+        },
+        {
+          "task_id": 7,
+          "successes": 45,
+          "trials": 50,
+          "success_rate": 0.9,
+          "wilson_95": [
+            0.7863976856252035,
+            0.9565242350681096
+          ]
+        },
+        {
+          "task_id": 8,
+          "successes": 2,
+          "trials": 50,
+          "success_rate": 0.04,
+          "wilson_95": [
+            0.011038884327619805,
+            0.1346009068750702
+          ]
+        },
+        {
+          "task_id": 9,
+          "successes": 18,
+          "trials": 50,
+          "success_rate": 0.36,
+          "wilson_95": [
+            0.24138749651846741,
+            0.49858983123887307
+          ]
+        }
+      ]
+    }
+  },
+  "overall": {
+    "successes": 1704,
+    "trials": 2000,
+    "pooled_success_rate": 0.852,
+    "complete_four_suites": true,
+    "wilson_95_pooled": [
+      0.8357628296825353,
+      0.8668875690314625
+    ]
+  },
+  "caveat": "Trial-level independence and matching benchmark settings must be verified."
+}

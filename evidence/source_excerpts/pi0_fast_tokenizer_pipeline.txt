@@ -1,0 +1,409 @@
+===== FAST TOKENIZER =====
+import logging
+import os
+
+import jax
+import numpy as np
+import orbax.checkpoint as ocp
+import sentencepiece
+from transformers import AutoProcessor
+
+import openpi.models.utils.fsq_tokenizer as fsq_tokenizer
+import openpi.shared.download as download
+
+
+class PaligemmaTokenizer:
+    def __init__(self, max_len: int = 48):
+        self._max_len = max_len
+
+        path = download.maybe_download("gs://big_vision/paligemma_tokenizer.model", gs={"token": "anon"})
+        with path.open("rb") as f:
+            self._tokenizer = sentencepiece.SentencePieceProcessor(model_proto=f.read())
+
+    def tokenize(self, prompt: str, state: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+        cleaned_text = prompt.strip().replace("_", " ").replace("\n", " ")
+        if state is not None:
+            # This is the Pi05 format, where the state is part of the discrete language input.
+            discretized_state = np.digitize(state, bins=np.linspace(-1, 1, 256 + 1)[:-1]) - 1
+            state_str = " ".join(map(str, discretized_state))
+            full_prompt = f"Task: {cleaned_text}, State: {state_str};\nAction: "
+            tokens = self._tokenizer.encode(full_prompt, add_bos=True)
+        else:
+            # This is the Pi0 format, where the state is part of the continuous action expert input.
+            # tokenize "\n" separately as the "start of answer" token
+            tokens = self._tokenizer.encode(cleaned_text, add_bos=True) + self._tokenizer.encode("\n")
+        tokens_len = len(tokens)
+        if tokens_len < self._max_len:
+            padding = [False] * (self._max_len - tokens_len)
+            mask = [True] * tokens_len + padding
+            tokens = tokens + padding
+        else:
+            if len(tokens) > self._max_len:
+                logging.warning(
+                    f"Token length ({len(tokens)}) exceeds max length ({self._max_len}), truncating. "
+                    "Consider increasing the `max_token_len` in your model config if this happens frequently."
+                )
+            tokens = tokens[: self._max_len]
+            mask = [True] * self._max_len
+
+        return np.asarray(tokens), np.asarray(mask)
+
+
+class FASTTokenizer:
+    def __init__(self, max_len: int = 256, fast_tokenizer_path: str = "physical-intelligence/fast"):
+        self._max_len = max_len
+
+        # Download base PaliGemma tokenizer
+        path = download.maybe_download("gs://big_vision/paligemma_tokenizer.model", gs={"token": "anon"})
+        with path.open("rb") as f:
+            self._paligemma_tokenizer = sentencepiece.SentencePieceProcessor(model_proto=f.read())
+
+        # Instantiate FAST tokenizer
+        self._fast_tokenizer = AutoProcessor.from_pretrained(fast_tokenizer_path, trust_remote_code=True)
+        self._fast_skip_tokens = 128  # Skip last 128 tokens in PaliGemma vocab since they are special tokens
+
+    def tokenize(
+        self, prompt: str, state: np.ndarray, actions: np.ndarray | None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        cleaned_text = prompt.lower().strip().replace("_", " ")
+
+        # Convention: state gets discretized into 256 discrete bins (assumed range after normalization: [-1, 1])
+        discretized_state = np.digitize(state, bins=np.linspace(-1, 1, 256 + 1)[:-1]) - 1
+
+        # Convention: prefix includes prompt and string-representation of state, followed by ';'
+        state_str = " ".join(map(str, discretized_state))
+        prefix = f"Task: {cleaned_text}, State: {state_str};\n"
+        prefix_tokens = self._paligemma_tokenizer.encode(prefix, add_bos=True)
+
+        if actions is not None:
+            # Tokenize actions with FAST tokenizer --> map to last tokens in PaliGemma vocab
+            action_tokens = self._fast_tokenizer(actions[None])[0]
+            action_tokens_in_pg = self._act_tokens_to_paligemma_tokens(action_tokens)
+
+            # Convention: postfix contains 'Action:' followed by FAST tokens, followed by '|'
+            postfix_tokens = (
+                self._paligemma_tokenizer.encode("Action: ")
+                + action_tokens_in_pg.tolist()
+                + self._paligemma_tokenizer.encode("|", add_eos=True)
+            )
+        else:
+            postfix_tokens = []
+
+        # Create output token sequence & masks
+        # AR mask is 0 on prefix (bidirectional attention) and 1 on postfix (causal attention to all previous tokens)
+        tokens = prefix_tokens + postfix_tokens
+        token_mask = [True] * len(tokens)
+        ar_mask = [0] * len(prefix_tokens) + [1] * len(postfix_tokens)
+        loss_mask = [False] * len(prefix_tokens) + [True] * len(postfix_tokens)  # Loss on postfix only
+
+        # Pad tokens to max length
+        tokens_len = len(tokens)
+        if tokens_len < self._max_len:
+            padding = [False] * (self._max_len - tokens_len)
+            tokens = tokens + padding
+            token_mask = token_mask + padding
+            ar_mask = ar_mask + padding
+            loss_mask = loss_mask + padding
+        else:
+            if len(tokens) > self._max_len:
+                logging.warning(
+                    f"Token length ({len(tokens)}) exceeds max length ({self._max_len}), truncating. "
+                    "Consider increasing the `max_token_len` in your model config if this happens frequently."
+                )
+            tokens = tokens[: self._max_len]
+            token_mask = token_mask[: self._max_len]
+            ar_mask = ar_mask[: self._max_len]
+            loss_mask = loss_mask[: self._max_len]
+
+        return np.asarray(tokens), np.asarray(token_mask), np.asarray(ar_mask), np.asarray(loss_mask)
+
+    def extract_actions(self, tokens: np.ndarray, action_horizon: int, action_dim: int) -> np.ndarray:
+        # Decode predicted output tokens
+        decoded_tokens = self._paligemma_tokenizer.decode(tokens.tolist())
+
+        # Extract actions from FAST model outputs
+        if "Action: " not in decoded_tokens:
+            return np.zeros((action_horizon, action_dim), dtype=np.float32)
+
+        # Extract actions from decoded tokens
+        raw_action_tokens = np.array(
+            self._paligemma_tokenizer.encode(decoded_tokens.split("Action: ")[1].split("|")[0].strip())
+        )
+        action_tokens = self._act_tokens_to_paligemma_tokens(raw_action_tokens)
+        return self._fast_tokenizer.decode(
+            [action_tokens.tolist()], time_horizon=action_horizon, action_dim=action_dim
+        )[0]
+
+    def _act_tokens_to_paligemma_tokens(self, tokens: np.ndarray | list[int]) -> np.ndarray:
+        if isinstance(tokens, list):
+            tokens = np.array(tokens)
+        return self._paligemma_tokenizer.vocab_size() - 1 - self._fast_skip_tokens - tokens
+
+
+###########################################################################
+## The tokenizers below are used for RoboArena baseline implementations. ##
+## They are *not* used for pi0-style models.                             ##
+###########################################################################
+
+
+class BinningTokenizer:
+    """
+    Standard RT-2 / OpenVLA style binning tokenizer.
+    """
+
+    def __init__(self, max_len: int = 256, n_bins: int = 256):
+        self._max_len = max_len
+        self._n_bins = n_bins
+
+        # Download base PaliGemma tokenizer
+        path = download.maybe_download("gs://big_vision/paligemma_tokenizer.model", gs={"token": "anon"})
+        with path.open("rb") as f:
+            self._paligemma_tokenizer = sentencepiece.SentencePieceProcessor(model_proto=f.read())
+
+        self._fast_skip_tokens = 128  # Skip last 128 tokens in PaliGemma vocab since they are special tokens
+
+    def tokenize(
+        self, prompt: str, state: np.ndarray, actions: np.ndarray | None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Tokenize a prompt and state into a sequence of tokens.
+
+        Args:
+            prompt: The text prompt to tokenize.
+            state: The state array to discretize and tokenize.
+            actions: Must be None. Action encoding is not currently supported.
+
+        Returns:
+            A tuple of (tokens, token_mask, ar_mask, targets).
+
+        Raises:
+            NotImplementedError: If actions is not None.
+        """
+        cleaned_text = prompt.lower().strip().replace("_", " ")
+
+        # Convention: state gets discretized into 256 discrete bins (assumed range after normalization: [-1, 1])
+        discretized_state = np.digitize(state, bins=np.linspace(-1, 1, 256 + 1)[:-1]) - 1
+
+        # Convention: prefix includes prompt and string-representation of state, followed by ';'
+        state_str = " ".join(map(str, discretized_state))
+        prefix = f"Task: {cleaned_text}, State: {state_str};\n"
+        prefix_tokens = self._paligemma_tokenizer.encode(prefix, add_bos=True)
+
+        if actions is not None:
+            raise NotImplementedError("BinningTokenizer does not support encoding actions atm (only for inference use)")
+        postfix_tokens = []
+
+        # Create output token sequence & masks
+        # AR mask is 0 on prefix (bidirectional attention) and 1 on postfix (causal attention to all previous tokens)
+        tokens = prefix_tokens + postfix_tokens
+        token_mask = [True] * len(tokens)
+        ar_mask = [0] * len(prefix_tokens) + [1] * len(postfix_tokens)
+        loss_mask = [False] * len(prefix_tokens) + [True] * len(postfix_tokens)  # Loss on postfix only
+
+        # Pad tokens to max length
+        tokens_len = len(tokens)
+        if tokens_len < self._max_len:
+            padding = [False] * (self._max_len - tokens_len)
+            tokens = tokens + padding
+            token_mask = token_mask + padding
+            ar_mask = ar_mask + padding
+            loss_mask = loss_mask + padding
+        else:
+            if len(tokens) > self._max_len:
+===== FAST INPUT / OUTPUT TRANSFORMS =====
+        tokens, token_masks = self.tokenizer.tokenize(prompt, state)
+        return {**data, "tokenized_prompt": tokens, "tokenized_prompt_mask": token_masks}
+
+
+@dataclasses.dataclass(frozen=True)
+class TokenizeFASTInputs(DataTransformFn):
+    tokenizer: _tokenizer.FASTTokenizer
+
+    def __call__(self, data: DataDict) -> DataDict:
+        if (prompt := data.pop("prompt", None)) is None:
+            raise ValueError("Prompt is required")
+
+        if not isinstance(prompt, str):
+            prompt = prompt.item()
+
+        state, actions = data["state"], data.get("actions")
+        tokens, token_mask, ar_mask, loss_mask = self.tokenizer.tokenize(prompt, state, actions)
+        return {
+            **data,
+            "tokenized_prompt": tokens,
+            "tokenized_prompt_mask": token_mask,
+            "token_ar_mask": ar_mask,
+            "token_loss_mask": loss_mask,
+        }
+
+
+@dataclasses.dataclass(frozen=True)
+class ExtractFASTActions(DataTransformFn):
+    tokenizer: _tokenizer.FASTTokenizer
+    action_horizon: int
+    action_dim: int
+
+    def __call__(self, data: DataDict) -> DataDict:
+        if "actions" not in data:
+            return data
+        # Model outputs are saved in "actions", but for FAST models they represent tokens.
+        tokens = data.pop("actions")
+        actions = self.tokenizer.extract_actions(tokens.astype(np.int32), self.action_horizon, self.action_dim)
+        return {
+            **data,
+            "actions": actions,
+        }
+
+
+@dataclasses.dataclass(frozen=True)
+class PromptFromLeRobotTask(DataTransformFn):
+    """Extracts a prompt from the current LeRobot dataset task."""
+
+    # Contains the LeRobot dataset tasks (dataset.meta.tasks).
+    tasks: dict[int, str]
+
+===== FSQ TOKENIZER DETOKENIZE =====
+        )
+
+        self.proj_mean = nn.Dense(self.data_dim)
+        self.out_scale = self.param("out_scale", lambda _: jnp.full((), 1.0))
+
+    def tokenize(
+        self, action: jnp.ndarray, *, obs: jnp.ndarray | None = None, train: bool = False
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
+        if self.bound is not None:
+            action = jnp.clip(action, -self.bound, self.bound)
+
+        x = self.proj(action)
+        x = self.encoder(x, train=train, state_conditioning=obs)
+
+        return self.codebook.encode(x)
+
+    def detokenize(self, tokens: jnp.ndarray, *, obs: jnp.ndarray | None = None) -> jnp.ndarray:
+        x = self.decoder(self.codebook.decode(tokens), state_conditioning=obs)
+        mean = self.proj_mean(x)
+        return mean * self.out_scale
+
+    def loss(
+        self, action: jnp.ndarray, *, obs: jnp.ndarray | None = None, train: bool = True
+    ) -> tuple[jnp.ndarray, dict[str, jnp.ndarray]]:
+        # Encode
+        x = self.proj(action)
+        z = self.encoder(x, train=train, state_conditioning=obs)
+
+        # Quantize
+        tokens, z = self.codebook(z)
+
+        # Decode
+        x = self.decoder(z, train=train, state_conditioning=obs)
+        mean = self.proj_mean(x) * self.out_scale
+
+        mse = jnp.mean(jnp.square(action - mean))
+        mae = jnp.mean(jnp.abs(action - mean))
+
+        return mse, {
+            "mse": mse,
+            "mae": mae,
+        }
+
+    def __call__(self, *args: Any, **kwargs: Any) -> tuple[jnp.ndarray, dict[str, jnp.ndarray]]:
+        """
+        Dummy for .init
+        """
+        return self.loss(*args, **kwargs)
+===== FAST MODEL CONFIG =====
+PALIGEMMA_EOS_TOKEN = 1
+
+
+def make_attn_mask(input_mask, mask_ar):
+    """Adapted from big_vision.
+
+    Tokens can attend to valid inputs tokens which have a cumulative mask_ar
+    smaller or equal to theirs. This way `mask_ar` bool[?B, N] can be used to
+    setup several types of attention, for example:
+
+      [[1 1 1 1 1 1]]: pure causal attention.
+
+      [[0 0 0 1 1 1]]: prefix-lm attention. The first 3 tokens can attend between
+          themselves and the last 3 tokens have a causal attention. The first
+          entry could also be a 1 without changing behaviour.
+
+      [[1 0 1 0 1 0 0 1 0 0]]: causal attention between 4 blocks. Tokens of a
+          block can attend all previous blocks and all tokens on the same block.
+
+    Args:
+      input_mask: bool[B, N] true if its part of the input, false if padding.
+      mask_ar: bool[?B, N] mask that's true where previous tokens cannot depend on
+        it and false where it shares the same attention mask as the previous token.
+    """
+    mask_ar = jnp.broadcast_to(mask_ar, input_mask.shape)
+    cumsum = jnp.cumsum(mask_ar, axis=1)
+    attn_mask = cumsum[:, None, :] <= cumsum[:, :, None]
+    valid_mask = input_mask[:, None, :] * input_mask[:, :, None]
+    return jnp.logical_and(attn_mask, valid_mask)
+
+
+@jax.vmap
+def left_to_right_align(x, input_mask, attn_mask):
+    """Converts input from left-align to right-aligned."""
+    # Due to vmap, this is operating in a single example (not batch level).
+    assert x.ndim == 2
+    assert input_mask.ndim == 1
+    assert attn_mask.ndim == 2
+    assert x.shape[0] == input_mask.shape[0]
+    assert attn_mask.shape[0] == attn_mask.shape[1], attn_mask.shape
+    seqlen = jnp.max(input_mask * jnp.arange(input_mask.shape[0])) + 1
+    x = jnp.roll(x, -seqlen, axis=0)
+    input_mask = jnp.roll(input_mask, -seqlen, axis=0)
+    attn_mask = jnp.roll(attn_mask, -seqlen, axis=(0, 1))
+    return x, input_mask, attn_mask
+
+
+def put_along_last_axis(arr, indices, values):
+    """Like np.put_along_axis(..., axis=-1), since jax is missing it."""
+    assert arr.ndim == indices.ndim == values.ndim, (arr.ndim, indices.ndim, values.ndim)
+    onehot = jax.nn.one_hot(indices, arr.shape[-1], dtype=values.dtype)
+    put_mask = jnp.einsum("...i,...in->...n", jnp.ones(values.shape, jnp.int32), onehot)
+    put_values = jnp.einsum("...i,...in->...n", values, onehot)
+    return jnp.where(put_mask, put_values, arr)
+
+
+@dataclasses.dataclass(frozen=True)
+class Pi0FASTConfig(_model.BaseModelConfig):
+    dtype: str = "bfloat16"
+    paligemma_variant: _gemma.Variant = "gemma_2b"
+
+    # Set the model specific defaults.
+    action_dim: int = 32
+    action_horizon: int = 32
+    max_token_len: int = 250
+
+    # Tokenizer for the fast model.
+    fast_model_tokenizer: Any | None = None
+    # Keyword arguments for the fast model tokenizer.
+    fast_model_tokenizer_kwargs: dict[str, Any] | None = None
+
+    @property
+    @override
+    def model_type(self) -> _model.ModelType:
+        return _model.ModelType.PI0_FAST
+
+    @override
+    def create(self, rng: at.KeyArrayLike) -> "Pi0FAST":
+        return Pi0FAST(self, rngs=nnx.Rngs(rng))
+
+    @override
+    def inputs_spec(self, *, batch_size: int = 1) -> tuple[_model.Observation, _model.Actions]:
+        image_spec = jax.ShapeDtypeStruct([batch_size, *_model.IMAGE_RESOLUTION, 3], jnp.float32)
+        image_mask_spec = jax.ShapeDtypeStruct([batch_size], jnp.bool_)
+
+        with at.disable_typechecking():
+            observation_spec = _model.Observation(
+                images={
+                    "base_0_rgb": image_spec,
+                    "base_1_rgb": image_spec,
+                    "wrist_0_rgb": image_spec,
+                },
+                image_masks={
+                    "base_0_rgb": image_mask_spec,
+                    "base_1_rgb": image_mask_spec,
+                    "wrist_0_rgb": image_mask_spec,

@@ -1,0 +1,36 @@
+model,experiment,scene_group,episodes,successes,success_rate,total_steps,analysis_group,is_primary_comparison,evidence_note
+octo,octo_close_fridge_atomic_3,close_fridge,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_close_fridge_atomic_3,close_fridge,3,0,0.0,3000,seven_atomic,True,
+octo,octo_close_showcase_atomic_3,close_showcase,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_close_showcase_atomic_3,close_showcase,3,0,0.0,3000,seven_atomic,True,
+octo,octo_composite_showcase_smoke,composite_pick_from_showcase,1,0,0.0,1000,composite_full,True,
+pi05,pi05_composite_showcase,composite_pick_from_showcase,1,0,0.0,1000,composite_full,True,
+octo,octo_composite_improved_smoke,composite_pick_to_basket,1,0,0.0,100,composite_diagnostic,False,
+octo,octo_composite_nivea_fanta_smoke_v2,composite_pick_to_basket,1,0,0.0,1000,composite_full,True,
+octo,octo_composite_three_items_smoke,composite_pick_to_basket,1,0,0.0,1000,composite_full,True,
+pi05,pi05_composite_nivea_fanta,composite_pick_to_basket,1,0,0.0,1000,composite_full,True,
+pi05,pi05_composite_three_items,composite_pick_to_basket,1,0,0.0,1000,composite_full,True,
+octo,octo_move_from_board_to_board_duff_atomic_3,move_from_board_to_board_duff,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_move_from_board_to_board_duff_atomic_3,move_from_board_to_board_duff,3,0,0.0,3000,seven_atomic,True,
+octo,octo_open_fridge_atomic_3,open_fridge,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_open_fridge_atomic_3,open_fridge,3,0,0.0,3000,seven_atomic,True,
+octo,octo_open_showcase_atomic_3,open_showcase,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_open_showcase_atomic_3,open_showcase,3,0,0.0,3000,seven_atomic,True,
+octo,octo_pick_from_floor_beans_atomic_3,pick_from_floor,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_pick_from_floor_beans_atomic_3,pick_from_floor,3,0,0.0,3000,seven_atomic,True,
+octo,octo_nivea_robo_10,pick_to_basket,10,0,0.0,6000,nivea_generalization,True,
+octo,octo_nivea_train_10,pick_to_basket,10,0,0.0,6000,nivea_generalization,True,
+octo,octo_pick_to_basket_nivea_atomic_3,pick_to_basket,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_basket_nivea_train_smoke,pick_to_basket,1,0,0.0,600,early_smoke_or_chunk,False,Do not pool as independent matched benchmark samples
+pi05,pi05_nivea_robo_10,pick_to_basket,10,0,0.0,6000,nivea_generalization,True,
+pi05,pi05_nivea_train_10,pick_to_basket,10,0,0.0,6000,nivea_generalization,True,
+pi05,pi05_pick_to_basket_nivea_atomic_3,pick_to_basket,3,0,0.0,3000,seven_atomic,True,
+pi05,pi05_train_nivea_smoke,pick_to_basket,1,0,0.0,600,early_smoke_or_chunk,False,Do not pool as independent matched benchmark samples
+octo,octo_chunk10_seed42,test_unseen_items_pick_to_basket,1,0,0.0,500,early_smoke_or_chunk,False,Do not pool as independent matched benchmark samples
+octo,octo_custom_seed42,test_unseen_items_pick_to_basket,1,0,0.0,500,early_smoke_or_chunk,False,Do not pool as independent matched benchmark samples
+octo,octo_first_run,test_unseen_items_pick_to_basket,1,0,0.0,500,early_smoke_or_chunk,False,Do not pool as independent matched benchmark samples
+octo,octo_nivea_unseen_10,test_unseen_items_pick_to_basket,10,0,0.0,6000,nivea_generalization,True,
+octo,octo_ood_10,test_unseen_items_pick_to_basket,10,0,0.0,5000,ood_prior_10,True,Naming/scene semantics and pairing with Nivea not verified from CSV alone
+pi05,pi05_nivea_unseen_10,test_unseen_items_pick_to_basket,10,0,0.0,6000,nivea_generalization,True,
+pi05,pi05_ood_10,test_unseen_items_pick_to_basket,10,0,0.0,5000,ood_prior_10,True,Naming/scene semantics and pairing with Nivea not verified from CSV alone
+pi05,pi05_ood_seed42,test_unseen_items_pick_to_basket,1,0,0.0,500,early_smoke_or_chunk,False,Do not pool as independent matched benchmark samples

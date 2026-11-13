@@ -1,0 +1,41 @@
+suite,task_id,successes,trials,checkpoint,seed,notes,task_description,source
+libero_spatial,0,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl between the plate and the ramekin and place it on the plate,screenshots
+libero_spatial,1,45,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl next to the ramekin and place it on the plate,screenshots
+libero_spatial,2,49,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl from table center and place it on the plate,screenshots
+libero_spatial,3,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl on the cookie box and place it on the plate,screenshots
+libero_spatial,4,47,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate,screenshots
+libero_spatial,5,44,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl on the ramekin and place it on the plate,screenshots
+libero_spatial,6,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl next to the cookie box and place it on the plate,screenshots
+libero_spatial,7,47,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl on the stove and place it on the plate,screenshots
+libero_spatial,8,48,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl next to the plate and place it on the plate,screenshots
+libero_spatial,9,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the black bowl on the wooden cabinet and place it on the plate,screenshots
+libero_object,0,46,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the alphabet soup and place it in the basket,screenshots
+libero_object,1,49,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the cream cheese and place it in the basket,screenshots
+libero_object,2,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the salad dressing and place it in the basket,screenshots
+libero_object,3,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the bbq sauce and place it in the basket,screenshots
+libero_object,4,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the ketchup and place it in the basket,screenshots
+libero_object,5,43,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the tomato sauce and place it in the basket,screenshots
+libero_object,6,47,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the butter and place it in the basket,screenshots
+libero_object,7,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the milk and place it in the basket,screenshots
+libero_object,8,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the chocolate pudding and place it in the basket,screenshots
+libero_object,9,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the orange juice and place it in the basket,screenshots
+libero_goal,0,36,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,open the middle drawer of the cabinet,screenshots
+libero_goal,1,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the bowl on the stove,screenshots
+libero_goal,2,48,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the wine bottle on top of the cabinet,screenshots
+libero_goal,3,46,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,open the top drawer and put the bowl inside,screenshots
+libero_goal,4,49,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the bowl on top of the cabinet,screenshots
+libero_goal,5,45,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,push the plate to the front of the stove,screenshots
+libero_goal,6,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the cream cheese in the bowl,screenshots
+libero_goal,7,47,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,turn on the stove,screenshots
+libero_goal,8,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the bowl on the plate,screenshots
+libero_goal,9,17,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the wine bottle on the rack,screenshots
+libero_10,0,43,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put both the alphabet soup and the tomato sauce in the basket,screenshots
+libero_10,1,50,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put both the cream cheese box and the butter in the basket,screenshots
+libero_10,2,12,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,turn on the stove and put the moka pot on it,screenshots
+libero_10,3,19,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the black bowl in the bottom drawer of the cabinet and close it,screenshots
+libero_10,4,44,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the white mug on the left plate and put the yellow and white mug on the right plate,screenshots
+libero_10,5,28,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,pick up the book and place it in the back compartment of the caddy,screenshots
+libero_10,6,40,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the white mug on the plate and put the chocolate pudding to the right of the plate,screenshots
+libero_10,7,45,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put both the alphabet soup and the cream cheese box in the basket,screenshots
+libero_10,8,2,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put both moka pots on the stove,screenshots
+libero_10,9,18,50,,,Reconstructed from user-provided screenshots dated 2026-11-13; checkpoint/seed/logs not supplied,put the yellow and white mug in the microwave and close it,screenshots

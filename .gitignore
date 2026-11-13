@@ -1,0 +1,36 @@
+# large generated research outputs and pretrained models
+data/
+models/
+demo_envs/
+*.h5
+*.hdf5
+*.mp4
+*.tfrecord*
+*.safetensors
+*.ckpt
+*.pth
+*.pt
+# local environment and derived files
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+*.log
+# backups
+*.tar.gz
+*.zip
+
+# Independently cloned upstream git repositories
+upstream_sources/RoboBenchMart/
+upstream_sources/openpi/
+
+# Private checkpoints and raw video
+*.ckpt
+*.safetensors
+
+# Small evidence artifacts are part of the published record and are
+# referenced with SHA-256 digests in evidence/EVIDENCE_README.md,
+# so they must not be swept up by the backup/media rules above.
+!evidence/**/*.zip
+!evidence/**/*.mp4

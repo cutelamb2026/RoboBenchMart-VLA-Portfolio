@@ -1,0 +1,14 @@
+{
+  "experiment_id": "octo_nivea_unseen_new_eval",
+  "model": "octo",
+  "env_id": "PickToBasketContNiveaEnv",
+  "scene_dir": "demo_envs/test_unseen_pick_to_basket",
+  "protocol": "UNSEEN",
+  "num_traj": 10,
+  "max_horizon": 600,
+  "start_seed": 0,
+  "host": "localhost",
+  "port": 8000,
+  "checkpoint_id": "FILL_WITH_CHECKPOINT_SHA_OR_PATH",
+  "code_revision": "FILL_WITH_GIT_COMMIT_HASH"
+}

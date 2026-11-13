@@ -1,0 +1,333 @@
+===== MODEL TRANSFORM FACTORY =====
+
+class GroupFactory(Protocol):
+    def __call__(self, model_config: _model.BaseModelConfig) -> _transforms.Group:
+        """Create a group."""
+
+
+@dataclasses.dataclass(frozen=True)
+class ModelTransformFactory(GroupFactory):
+    """Creates model transforms for standard pi0 models."""
+
+    # If provided, will determine the default prompt that be used by the model.
+    default_prompt: str | None = None
+
+    def __call__(self, model_config: _model.BaseModelConfig) -> _transforms.Group:
+        match model_config.model_type:
+            case _model.ModelType.PI0:
+                return _transforms.Group(
+                    inputs=[
+                        _transforms.InjectDefaultPrompt(self.default_prompt),
+                        _transforms.ResizeImages(224, 224),
+                        _transforms.TokenizePrompt(
+                            _tokenizer.PaligemmaTokenizer(model_config.max_token_len),
+                        ),
+                        _transforms.PadStatesAndActions(model_config.action_dim),
+                    ],
+                )
+            case _model.ModelType.PI05:
+                assert isinstance(model_config, pi0_config.Pi0Config)
+                return _transforms.Group(
+                    inputs=[
+                        _transforms.InjectDefaultPrompt(self.default_prompt),
+                        _transforms.ResizeImages(224, 224),
+                        _transforms.TokenizePrompt(
+                            _tokenizer.PaligemmaTokenizer(model_config.max_token_len),
+                            discrete_state_input=model_config.discrete_state_input,
+                        ),
+                        _transforms.PadStatesAndActions(model_config.action_dim),
+                    ],
+                )
+            case _model.ModelType.PI0_FAST:
+                tokenizer_cls = (
+                    _tokenizer.FASTTokenizer
+                    if model_config.fast_model_tokenizer is None
+                    else model_config.fast_model_tokenizer
+                )
+                tokenizer_kwargs = (
+                    {} if model_config.fast_model_tokenizer_kwargs is None else model_config.fast_model_tokenizer_kwargs
+                )
+                return _transforms.Group(
+                    inputs=[
+                        _transforms.InjectDefaultPrompt(self.default_prompt),
+                        _transforms.ResizeImages(224, 224),
+                        _transforms.TokenizeFASTInputs(
+                            tokenizer_cls(model_config.max_token_len, **tokenizer_kwargs),
+                        ),
+                    ],
+                    outputs=[
+                        _transforms.ExtractFASTActions(
+                            tokenizer_cls(model_config.max_token_len, **tokenizer_kwargs),
+                            action_horizon=model_config.action_horizon,
+                            action_dim=model_config.action_dim,
+===== RBM DATA CONFIG =====
+            data_transforms=data_transforms,
+            model_transforms=model_transforms,
+            action_sequence_keys=self.action_sequence_keys,
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class LeRobotRBMDataConfig(DataConfigFactory):
+    extra_delta_transform: bool = False
+
+    @override
+    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
+        repack_transform = _transforms.Group(
+            inputs=[
+                _transforms.RepackTransform(
+                    {
+                        "observation/image": "image",
+                        "observation/wrist_image": "wrist_image",
+                        "observation/extra_image": "extra_image",
+                        "observation/state": "state",
+                        "actions": "actions",
+                        "prompt": "prompt",
+                    }
+                )
+            ]
+        )
+
+        data_transforms = _transforms.Group(
+            inputs=[robobenchmart_policy.RBMInputs(model_type=model_config.model_type)],
+            outputs=[robobenchmart_policy.RBMOutputs()],
+        )
+
+        model_transforms = ModelTransformFactory()(model_config)
+
+        return dataclasses.replace(
+            self.create_base_config(assets_dirs, model_config),
+            repack_transforms=repack_transform,
+            data_transforms=data_transforms,
+            model_transforms=model_transforms,
+        )
+
+@dataclasses.dataclass(frozen=True)
+class LeRobotLiberoDataConfig(DataConfigFactory):
+    """
+    This config is used to configure transforms that are applied at various parts of the data pipeline.
+    For your own dataset, you can copy this class and modify the transforms to match your dataset based on the
+    comments below.
+    """
+
+    extra_delta_transform: bool = False
+
+    @override
+    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
+        # The repack transform is *only* applied to the data coming from the dataset,
+        # and *not* during inference. We can use it to make inputs from the dataset look
+        # as close as possible to those coming from the inference environment (e.g. match the keys).
+        # Below, we match the keys in the dataset (which we defined in the data conversion script) to
+        # the keys we use in our inference pipeline (defined in the inference script for libero).
+        # For your own dataset, first figure out what keys your environment passes to the policy server
+        # and then modify the mappings below so your dataset's keys get matched to those target keys.
+        # The repack transform simply remaps key names here.
+===== STATE TRANSFORM =====
+@dataclasses.dataclass(frozen=True)
+class AbsoluteActions(DataTransformFn):
+    """Repacks delta actions into absolute action space."""
+
+    # Boolean mask for the action dimensions to be repacked into absolute action space. Length
+    # can be smaller than the actual number of dimensions. If None, this transform is a no-op.
+    # See `make_bool_mask` for more details.
+    mask: Sequence[bool] | None
+
+    def __call__(self, data: DataDict) -> DataDict:
+        if "actions" not in data or self.mask is None:
+            return data
+
+        state, actions = data["state"], data["actions"]
+        mask = np.asarray(self.mask)
+        dims = mask.shape[-1]
+        actions[..., :dims] += np.expand_dims(np.where(mask, state[..., :dims], 0), axis=-2)
+        data["actions"] = actions
+
+        return data
+
+
+@dataclasses.dataclass(frozen=True)
+class TokenizePrompt(DataTransformFn):
+    tokenizer: _tokenizer.PaligemmaTokenizer
+    discrete_state_input: bool = False
+
+    def __call__(self, data: DataDict) -> DataDict:
+        if (prompt := data.pop("prompt", None)) is None:
+            raise ValueError("Prompt is required")
+
+        if self.discrete_state_input:
+            if (state := data.get("state", None)) is None:
+                raise ValueError("State is required.")
+        else:
+            state = None
+
+        if not isinstance(prompt, str):
+            prompt = prompt.item()
+
+        tokens, token_masks = self.tokenizer.tokenize(prompt, state)
+        return {**data, "tokenized_prompt": tokens, "tokenized_prompt_mask": token_masks}
+
+
+@dataclasses.dataclass(frozen=True)
+class TokenizeFASTInputs(DataTransformFn):
+    tokenizer: _tokenizer.FASTTokenizer
+
+    def __call__(self, data: DataDict) -> DataDict:
+        if (prompt := data.pop("prompt", None)) is None:
+            raise ValueError("Prompt is required")
+
+        if not isinstance(prompt, str):
+            prompt = prompt.item()
+
+        state, actions = data["state"], data.get("actions")
+        tokens, token_mask, ar_mask, loss_mask = self.tokenizer.tokenize(prompt, state, actions)
+        return {
+            **data,
+            "tokenized_prompt": tokens,
+            "tokenized_prompt_mask": token_mask,
+===== RBM POLICY ADAPTER =====
+import dataclasses
+
+import einops
+import numpy as np
+
+from openpi import transforms
+from openpi.models import model as _model
+
+
+def make_robobenchmart_example() -> dict:
+    """Creates a random input example for the RoboBenchMart policy."""
+    return {
+        "observation/state": np.random.rand(15),
+        "observation/image": np.random.randint(256, size=(256, 256, 3), dtype=np.uint8),
+        "observation/wrist_image": np.random.randint(256, size=(256, 256, 3), dtype=np.uint8),
+        "observation/extra_image": np.random.randint(256, size=(256, 256, 3), dtype=np.uint8),
+        "prompt": "do something",
+    }
+
+
+def _parse_image(image) -> np.ndarray:
+    image = np.asarray(image)
+    if np.issubdtype(image.dtype, np.floating):
+        image = (255 * image).astype(np.uint8)
+    if image.shape[0] == 3:
+        image = einops.rearrange(image, "c h w -> h w c")
+    return image
+
+
+@dataclasses.dataclass(frozen=True)
+class RBMInputs(transforms.DataTransformFn):
+    """
+    This class is used to convert inputs to the model to the expected format. It is used for both training and inference.
+    """
+
+    model_type: _model.ModelType
+
+    def __call__(self, data: dict) -> dict:
+        base_image = _parse_image(data["observation/image"])
+        wrist_image = _parse_image(data["observation/wrist_image"])
+        extra_image = _parse_image(data["observation/extra_image"])
+
+        inputs = {
+            "state": data["observation/state"],
+            "image": {
+                "base_0_rgb": base_image,
+                "left_wrist_0_rgb": wrist_image,
+                "right_wrist_0_rgb": extra_image,
+            },
+            "image_mask": {
+                "base_0_rgb": np.True_,
+                "left_wrist_0_rgb": np.True_,
+                "right_wrist_0_rgb": np.True_,
+            },
+        }
+
+        if "actions" in data:
+            inputs["actions"] = data["actions"]
+
+        if "prompt" in data:
+            inputs["prompt"] = data["prompt"]
+
+        return inputs
+
+
+@dataclasses.dataclass(frozen=True)
+class RBMOutputs(transforms.DataTransformFn):
+    """
+    This class is used to convert outputs from the model back the the dataset specific format. It is
+    used for inference only.
+    """
+
+    def __call__(self, data: dict) -> dict:
+        return {"actions": np.asarray(data["actions"][:, :13])}
+1===== PI0 MODEL CONFIG =====
+    from openpi.models.pi0 import Pi0
+
+
+@dataclasses.dataclass(frozen=True)
+class Pi0Config(_model.BaseModelConfig):
+    dtype: str = "bfloat16"
+    paligemma_variant: _gemma.Variant = "gemma_2b"
+    action_expert_variant: _gemma.Variant = "gemma_300m"
+
+    # Set the model specific defaults.
+    action_dim: int = 32
+    action_horizon: int = 50
+    max_token_len: int = None  # type: ignore
+    # Pi05 has two differences from Pi0:
+    # - the state input is part of the discrete language tokens rather than a continuous input that is part of the suffix
+    # - the action expert uses adaRMSNorm to inject the flow matching timestep
+    pi05: bool = False
+    # This config option is not used directly by the model, but it is read by the ModelTransformFactory.
+    discrete_state_input: bool = None  # type: ignore
+
+    def __post_init__(self):
+        if self.max_token_len is None:
+            object.__setattr__(self, "max_token_len", 200 if self.pi05 else 48)
+        if self.discrete_state_input is None:
+            object.__setattr__(self, "discrete_state_input", self.pi05)
+
+    @property
+    @override
+    def model_type(self) -> _model.ModelType:
+        if self.pi05:
+            return _model.ModelType.PI05
+        return _model.ModelType.PI0
+
+    @override
+    def create(self, rng: at.KeyArrayLike) -> "Pi0":
+        from openpi.models.pi0 import Pi0
+
+        return Pi0(self, rngs=nnx.Rngs(rng))
+
+    @override
+    def inputs_spec(self, *, batch_size: int = 1) -> tuple[_model.Observation, _model.Actions]:
+        image_spec = jax.ShapeDtypeStruct([batch_size, *_model.IMAGE_RESOLUTION, 3], jnp.float32)
+        image_mask_spec = jax.ShapeDtypeStruct([batch_size], jnp.bool_)
+
+        with at.disable_typechecking():
+            observation_spec = _model.Observation(
+                images={
+                    "base_0_rgb": image_spec,
+                    "left_wrist_0_rgb": image_spec,
+                    "right_wrist_0_rgb": image_spec,
+                },
+                image_masks={
+                    "base_0_rgb": image_mask_spec,
+                    "left_wrist_0_rgb": image_mask_spec,
+                    "right_wrist_0_rgb": image_mask_spec,
+                },
+                state=jax.ShapeDtypeStruct([batch_size, self.action_dim], jnp.float32),
+                tokenized_prompt=jax.ShapeDtypeStruct([batch_size, self.max_token_len], jnp.int32),
+                tokenized_prompt_mask=jax.ShapeDtypeStruct([batch_size, self.max_token_len], bool),
+            )
+        action_spec = jax.ShapeDtypeStruct([batch_size, self.action_horizon, self.action_dim], jnp.float32)
+
+        return observation_spec, action_spec
+
+    def get_freeze_filter(self) -> nnx.filterlib.Filter:
+        """Returns the freeze filter based on the model config."""
+        filters = []
+        has_lora = False
+        gemma_params_filter = nnx_utils.PathRegex(".*llm.*")
+        action_expert_params_filter = nnx_utils.PathRegex(".*llm.*_1.*")
+        if "lora" in self.paligemma_variant:
